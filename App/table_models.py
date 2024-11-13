@@ -4,14 +4,14 @@ from sqlalchemy.orm import relationship
 from sqlalchemy_utils.types import ChoiceType
 
 class User(Base):
-    __tablename__ = 'User'
+    __tablename__ = 'Users'
     user_id = Column(Integer, primary_key = True, autoincrement = True)
     full_name = Column(String(25))
     email = Column(String(80), unique = True)
     password = Column(Text, nullable = True)
     is_staff = Column(Boolean, default = False)
-    is_active = Column(Boolean, default = False)
-    orders = relationship('Order', back_populates = 'User')
+    is_active = Column(Boolean, default = True)
+    orders = relationship('Order', back_populates = 'users')
 
     def __repr__(self):
         return f"<User {self.full_name}"
@@ -24,7 +24,10 @@ class Address(Base):
     state = Column(String(20))
     country = Column(String(20))
     zip_code = Column(String(20))
-    orders = relationship('Order', back_populates = 'Address')
+    orders = relationship('Order')
+    
+    def __repr__(self):
+        return f"{street}\n{city}-{zip_code}\n{state}\n{country}"
 
 class Pizza(Base):
 
@@ -63,12 +66,12 @@ class Order(Base):
     __tablename__='Orders'
     order_id = Column(Integer, primary_key = True, autoincrement = True)
     order_status = Column(ChoiceType(choices = ORDER_STATUSES), default="PENDING")
-    user_id = Column(Integer, ForeignKey('User.user_id'))
+    user_id = Column(Integer, ForeignKey('Users.user_id'))
     order_amount = Column(Integer)
     payment_status = Column(ChoiceType(choices = PAYMENT_STATUS), default = "PENDING-PAYMENT")
     order_date = Column(DateTime)
     deliver_address = Column(Integer, ForeignKey('Address.address_id'))
-    user = relationship('User', back_populates='Orders')
+    users = relationship('User', back_populates='orders')
 
     def __repr__(self):
         return f"<Order {self.order_id}>"
@@ -80,8 +83,6 @@ class OrderItems(Base):
     order_id = Column(Integer, ForeignKey('Orders.order_id'))
     pizza_id = Column(Integer, ForeignKey("Pizza.pizza_id"))
     quantity = Column(Integer)
-    
-    order = relationship('Order', back_populates='items')
     pizza = relationship('Pizza')
     
     def __repr__(self):
