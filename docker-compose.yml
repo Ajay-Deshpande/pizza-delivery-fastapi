@@ -1,0 +1,43 @@
+name: postgre_env
+services:
+  postgres:
+    image: postgres
+    container_name: "postgres"
+    env_file:
+      - "./Extras/.env"
+    environment:
+      - POSTGRES_PASSWORD=${PG_DB_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - 5432:5432
+    networks:
+      - postgres_network
+  
+  pgadmin:
+    depends_on:
+      - "postgres"
+    build: 
+      dockerfile: './Extras/PGAdminDockerfile'
+    container_name: "pgadmin"
+    env_file:
+      - "./Extras/.env"
+    environment:
+      - PGADMIN_DEFAULT_PASSWORD=${PG_DB_PASSWORD}
+    ports:
+      - 80:80
+    networks:
+      - postgres_network
+  
+  pizzeria-api:
+    build:
+      dockerfile: "./Extras/ApplicationDockerfile"
+    container_name: "pizzeria"
+    ports:
+      - 8000:8000
+    networks:
+      - postgres_network
+      
+networks:
+  postgres_network:
+    driver:
+      bridge

@@ -1,0 +1,14 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "Pizza Store",
+            "Group": "Servers",
+            "Port": 5432,
+            "Username": "postgres",
+            "Host": "postgres",
+            "SSLMode": "prefer",
+            "MaintenanceDB": "postgres",
+            "PasswordExecCommand": "$env:PG_DB_PASSWORD"
+        }
+    }
+}
