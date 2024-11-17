@@ -1,5 +1,5 @@
 from db_helpers import Base
-from sqlalchemy import Column, Integer, Boolean, Text, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, Boolean, Text, String, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils.types import ChoiceType
 
@@ -12,35 +12,38 @@ class User(Base):
     is_staff = Column(Boolean, default = False)
     is_active = Column(Boolean, default = True)
     orders = relationship('Order', back_populates = 'users')
+    address = relationship('Address', back_populates = 'users')
 
     def __repr__(self):
         return f"<User {self.full_name}"
 
 class Address(Base):
-    __tablename__ = "Address"
+    __tablename__ = "Addresses"
     address_id = Column(Integer, autoincrement = True, primary_key = True)
     street = Column(Text)
     city = Column(String(20))
     state = Column(String(20))
     country = Column(String(20))
     zip_code = Column(String(20))
+    user_id = Column(Integer, ForeignKey(User.user_id))
+    users = relationship('User')
     orders = relationship('Order')
     
     def __repr__(self):
-        return f"{street}\n{city}-{zip_code}\n{state}\n{country}"
+        return f"{self.street}\n{self.city}-{self.zip_code}\n{self.state}\n{self.country}"
 
 class Pizza(Base):
 
     PIZZA_SIZES=(
-        ('SMALL','small'),
-        ('MEDIUM','medium'),
-        ('LARGE','large'),
-        ('EXTRA-LARGE','extra-large')
+        ('small','SMALL'),
+        ('medium','MEDIUM'),
+        ('large','LARGE'),
+        ('extra_large','EXTRA-LARGE')
     )
 
     __tablename__ = "Pizza"
     pizza_id = Column(Integer, primary_key = True, autoincrement = True)
-    pizza_name = Column(String(30))
+    pizza_name = Column(String(30), unique = True)
     pizza_size = Column(ChoiceType(choices = PIZZA_SIZES), default = "SMALL")
     description = Column(Text, nullable = True)
     price = Column(Integer)
@@ -51,10 +54,10 @@ class Pizza(Base):
 class Order(Base):
 
     ORDER_STATUSES=(
-        ('PENDING','pending'),
+        ('PENDING', 'pending'),
         ("ORDER-ACCEPTED", "order-accepted"),
-        ('IN-TRANSIT','in-transit'),
-        ('DELIVERED','delivered')
+        ('IN-TRANSIT', 'in-transit'),
+        ('DELIVERED', 'delivered')
     )
 
     PAYMENT_STATUS = (
@@ -65,13 +68,14 @@ class Order(Base):
 
     __tablename__='Orders'
     order_id = Column(Integer, primary_key = True, autoincrement = True)
-    order_status = Column(ChoiceType(choices = ORDER_STATUSES), default="PENDING")
+    order_status = Column(ChoiceType(choices = ORDER_STATUSES), default = "PENDING")
     user_id = Column(Integer, ForeignKey('Users.user_id'))
     order_amount = Column(Integer)
     payment_status = Column(ChoiceType(choices = PAYMENT_STATUS), default = "PENDING-PAYMENT")
-    order_date = Column(DateTime)
-    deliver_address = Column(Integer, ForeignKey('Address.address_id'))
-    users = relationship('User', back_populates='orders')
+    order_date = Column(DateTime, default = func.now())
+    delivery_address = Column(Integer, ForeignKey('Addresses.address_id'))
+    users = relationship('User', back_populates = 'orders')
+    items = relationship('OrderItems', back_populates = 'orders', cascade = "all, delete-orphan")
 
     def __repr__(self):
         return f"<Order {self.order_id}>"
@@ -84,6 +88,7 @@ class OrderItems(Base):
     pizza_id = Column(Integer, ForeignKey("Pizza.pizza_id"))
     quantity = Column(Integer)
     pizza = relationship('Pizza')
-    
+    orders = relationship("Order", back_populates = "items")
+
     def __repr__(self):
         return f"{self.quantity} {self.pizza_id}'s ordered"
